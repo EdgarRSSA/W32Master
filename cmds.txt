@@ -1,0 +1,8 @@
+# Remove build content
+gci .\build\ | ForEach-Object FullName | Remove-Item
+
+# Precompile
+& cl.exe /W4 /EHsc /Ycpch.h /FpC:\Users\Edgar\Desktop\W32Master\pch.pch  /c /errorReport:prompt  C:\Users\Edgar\Desktop\W32Master\pch.cpp
+
+# Compile and link.
+& cl.exe /W4 /EHsc /FeC:\Users\Edgar\Desktop\W32Master\build\main.exe /Yupch.h C:\Users\Edgar\Desktop\W32Master\main.cpp C:\Users\Edgar\Desktop\W32Master\pch.obj
