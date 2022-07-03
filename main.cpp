@@ -7,7 +7,7 @@
  */
 int main()
 {
-    std::cout << "Hello Win32/C++ console" << std::endl;
+    std::cout << "Win32/C++" << std::endl;
 
     typedef DWORD PID;
     PID _count = GetCurrentProcessId();
