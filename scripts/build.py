@@ -1,7 +1,7 @@
 import project
 
 from subprocess import run
-import os, pathlib, sys, re, string
+import os, pathlib, sys, re, hashlib
 
 def prepareEnv():
 
@@ -85,6 +85,9 @@ if __name__ == "__main__":
     _src,_build,_cp,_lp = prepareEnv()
 
     _proj = project.W32Master(_build,_src,_cp,_lp)
+
+    with open(_src.joinpath("main.cpp"),mode="r",encoding="utf8") as fp:
+        print(hashlib.sha1(fp.read().encode(encoding="utf8")).hexdigest())
 
     if sys.argv.__len__() > 1:
         if  re.match(r"^clean$",sys.argv[1],flags=re.IGNORECASE) is not None:
