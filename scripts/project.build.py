@@ -65,15 +65,19 @@ def precompile(paths:Dict[str,WindowsPath]):
     compile_pch = run(_ppch,capture_output=False,cwd=f"{paths['source']}")
     return compile_pch.returncode
 
-def compile(paths:Dict[str,WindowsPath]):
+def compile(paths:Dict[str,WindowsPath],file:WindowsPath,buildfile:WindowsPath):
     print("\nCompiling")
+    level = file.relative_to(paths["source"]).parts.__len__() - 1
+    pch_use = paths['pch.h'].name
+
     extraOptions = [
-            f"/Yu{paths['pch.h'].name}",    # Use Precompiled .h
-            f"/Fp{paths['gen_pre_pch']}",   # Use Precompiled .pch
-            f"/Fd{paths['gen_pdb']}",       # Database File
-            f"/Fo{paths['build']}\\",       # Object File
+        f"/I{paths['source'].joinpath('./utils/')}\\",  # Add aditional include dir
+        f"/Yu{pch_use}",                                # Use Precompiled .h
+        f"/Fp{paths['gen_pre_pch']}",                   # Use Precompiled .pch
+        f"/Fd{paths['gen_pdb']}",                       # Database File
+        f"/Fo{buildfile}",                              # Object File
     ]
-    file_path = f"{paths['main.cpp']}"
+    file_path = f"{file}"
     _ppch= [f"{paths['compiler']}",*commonCompileOptions,*extraOptions,file_path]
     print(*_ppch,sep=" ")
     print()
@@ -114,7 +118,7 @@ def link(paths:Dict[str,WindowsPath]):
     ]
     obj_main = f"{paths['gen_main']}"
     obj_ppch = f"{paths['gen_pch']}"
-    _args= [f"{paths['linker']}",*link_args,obj_main,obj_ppch]
+    _args= [f"{paths['linker']}",*link_args,obj_main,obj_ppch,f"{paths['gen_util']}"]
     print(*_args,sep=" ")
     print()
     run_linker = run(_args,capture_output=False,cwd=f"{paths['source']}")
@@ -148,11 +152,14 @@ if __name__ == "__main__":
         "gen_ilk": build_directory.joinpath("./app.ilk"),
         "gen_lib": build_directory.joinpath("./app.lib"),
         "gen_main": build_directory.joinpath("./main.obj"),
+        "gen_util": build_directory.joinpath("./util.obj"),
         "gen_pch": build_directory.joinpath("./pch.obj"),
         "gen_pre_pch": build_directory.joinpath("./pch.pch"),
         "compiler": WindowsPath(vc_path).joinpath("./bin/HostX64/x64/cl.exe"),
         "linker": WindowsPath(vc_path).joinpath("./bin/HostX64/x64/link.exe"),
         "main.cpp":source_directory.joinpath("./main.cpp"),
+        "util.cpp":source_directory.joinpath("./utils/util.cpp"),
+        "utils.h":source_directory.joinpath("./utils/utils.h"),
         "pch.cpp":source_directory.joinpath("./pch.cpp"),
         "pch.h":source_directory.joinpath("./pch.h"),
     }
@@ -181,10 +188,11 @@ if __name__ == "__main__":
 
         # Compile and link
         if  re.match(r"^compile$",sys.argv[1],flags=re.IGNORECASE) is not None:
-            _c1 = compile(project_paths)
-            if _c1 == 0 and sys.argv.__len__() == 3:
-                if  re.match(r"^link$",sys.argv[2],flags=re.IGNORECASE) is not None:
-                    link(project_paths)
+            _c1 = compile(project_paths,project_paths["main.cpp"],project_paths["gen_main"])
+            _c2 = compile(project_paths,project_paths["util.cpp"],project_paths["gen_util"])
+            #if _c1 == 0 and sys.argv.__len__() == 3:
+            #    if  re.match(r"^link$",sys.argv[2],flags=re.IGNORECASE) is not None:
+            #        link(project_paths)
         # Link only
         if  re.match(r"^link$",sys.argv[1],flags=re.IGNORECASE) is not None:
             link(project_paths)
