@@ -7,7 +7,9 @@
  */
 int main()
 {
+    auto mega = "";
     std::cout << "Win32/C++" << std::endl;
+    std::cout << "Pruebas de API" << std::endl;
 
     typedef DWORD PID;
     PID _count = GetCurrentProcessId();
