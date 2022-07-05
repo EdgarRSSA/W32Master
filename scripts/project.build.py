@@ -229,7 +229,8 @@ if __name__ == "__main__":
 
 
     # Check Existence of all paths
-    logging.debug(f"Project paths: {''.join([i.__str__()+';' for i in project_paths.values()])}")
+    logging.debug(f"Project paths:")
+    [logging.debug(f" {i}") for i in project_paths.values()]
     check_res = check_paths(project_paths)
     if check_res == False:
         logging.error("One or more paths not exist!")
