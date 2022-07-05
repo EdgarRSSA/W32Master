@@ -203,7 +203,7 @@ if __name__ == "__main__":
             format_log = "{0}%(asctime)s{1} %(levelname)-8s{2} %(message)s".format(time_color,level_color,reset_color)
     # Logging Config
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format=format_log,
         encoding="utf8",
     )
