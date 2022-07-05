@@ -125,6 +125,7 @@ def link(paths:Dict[str,WindowsPath]):
     # Linker Arguments
     link_args =[
         "/ERRORREPORT:PROMPT",
+        "/nologo",
         f"/OUT:{paths['gen_exe']}",
         "/INCREMENTAL",
         f"/ILK:{paths['gen_ilk']}",
@@ -183,10 +184,27 @@ def link(paths:Dict[str,WindowsPath]):
 #
 if __name__ == "__main__":
 
+    # Check if parent process is powershell and
+    # change format used by the logger if true.
+    parent_exe = run(['tasklist.exe','/NH','/svc','/FO','CSV','/FI',f"PID eq {os.getppid()}"],
+        stdout=PIPE,
+        stderr=STDOUT,
+        encoding='UTF-8',
+        errors='ignore',
+        capture_output=False,
+    )
+    format_log = "%(asctime)s %(levelname)-8s %(message)s"
+    if (parent_exe.returncode == 0):
+        parent_name = parent_exe.stdout.split(",")[0].replace("\"","")
+        if parent_name.startswith("pwsh") or parent_name.startswith("powershell"):
+            time_color = "\u001b[38;5;220m"
+            reset_color = "\u001b[0m"
+            level_color = "\u001b[38;5;219m"
+            format_log = "{0}%(asctime)s{1} %(levelname)-8s{2} %(message)s".format(time_color,level_color,reset_color)
     # Logging Config
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s %(levelname)-8s %(message)s",
+        format=format_log,
         encoding="utf8",
     )
 
@@ -229,8 +247,10 @@ if __name__ == "__main__":
 
 
     # Check Existence of all paths
-    logging.debug(f"Project paths:")
-    [logging.debug(f" {i}") for i in project_paths.values()]
+    pp_log = ""
+    for i in project_paths.values():
+        pp_log = pp_log +f"\n{i}"
+    logging.debug(f"Project paths:{pp_log}")
     check_res = check_paths(project_paths)
     if check_res == False:
         logging.error("One or more paths not exist!")
