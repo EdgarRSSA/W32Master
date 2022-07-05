@@ -1,7 +1,12 @@
+from asyncio.subprocess import STDOUT,PIPE
 from typing import Dict
 from pathlib import WindowsPath
 from subprocess import run
-import os, sys, re, hashlib
+import os
+import sys
+import re
+import hashlib
+import logging
 
 def check_paths(paths:Dict[str,WindowsPath]):
     for i in paths:
@@ -11,26 +16,27 @@ def check_paths(paths:Dict[str,WindowsPath]):
     return True
 
 def clear(buildpath:WindowsPath):
-    print(f"\nClean directory: {buildpath}\n")
+    logging.info(f"Clear {buildpath}")
     if buildpath.exists():
         files_to_clean = os.listdir(buildpath)
         files_removed = 0
         for i in files_to_clean:
             _file = buildpath.joinpath(i)
-            print(f"\tRemoving file {_file}")
+            logging.debug(f"Removing file {_file}")
             try:
                 os.remove(_file)
                 files_removed+=1
             except OSError as err:
-                print(f"\tError '{err.strerror}' when trying to remove: {_file}")
-        print(f"Files Removed: {files_removed}")
+                logging.warning(f"Error '{err.strerror}' when trying to remove: {_file}")
+        logging.info(f"Files Removed: {files_removed}")
     else:
         os.mkdir(buildpath)
-        print(f"Build directory created!")
+        logging.info(f"Build directory created!")
 
 
 commonCompileOptions = [
     "/c",                   # Compile only
+    "/nologo",
     "/utf-8",               # Encoding
     "/ZI",                  #
     "/diagnostics:column",  # Show diagnostic in columns
@@ -51,25 +57,40 @@ commonCompileOptions = [
 ]
 
 def precompile(paths:Dict[str,WindowsPath]):
-    print("\nPrecompiling")
+    logging.info("Precompiling")
+    # Prepare arguments
     extraOptions = [
-            f"/Yc{paths['pch.h'].name}",   # Create Precompiled
-            f"/Fp{paths['gen_pre_pch']}",  # Precompiled File
-            f"/Fd{paths['gen_pdb']}",      # Database File
-            f"/Fo{paths['gen_pch']}",      # Object File
-        ]
+        f"/Yc{paths['pch.h'].name}",   # Create Precompiled
+        f"/Fp{paths['gen_pre_pch']}",  # Precompiled File
+        f"/Fd{paths['gen_pdb']}",      # Database File
+        f"/Fo{paths['gen_pch']}",      # Object File
+    ]
     file_path = f"{paths['pch.cpp']}"
     _ppch= [f"{paths['compiler']}",*commonCompileOptions,*extraOptions,file_path]
-    print(*_ppch,sep=" ")
-    print()
-    compile_pch = run(_ppch,capture_output=False,cwd=f"{paths['source']}")
+    logging.debug(f"Compiler Args: \n{''.join([i+' ' for i in _ppch])}")
+    # Run compiler
+    compile_pch = run(_ppch,
+        stdout=PIPE,
+        stderr=STDOUT,
+        encoding='UTF-8',
+        errors='ignore',
+        capture_output=False,
+        cwd=f"{paths['source']}"
+    )
+    # Logging
+    if compile_pch.returncode == 0:
+        logging.info(f"Precompiled Success [{compile_pch.returncode}]")
+        logging.debug(f"Precompiled stdout:\n{compile_pch.stdout}")
+    else:
+        logging.error(f"Precompiled Error Code [{compile_pch.returncode}]")
+        logging.debug(f"Precompiled Error:\n{compile_pch.stdout}")
+    # End and return error code
     return compile_pch.returncode
 
 def compile(paths:Dict[str,WindowsPath],file:WindowsPath,buildfile:WindowsPath):
-    print("\nCompiling")
-    level = file.relative_to(paths["source"]).parts.__len__() - 1
+    logging.info("Compiling")
+    # Compiler custom arguments
     pch_use = paths['pch.h'].name
-
     extraOptions = [
         f"/I{paths['source'].joinpath('./utils/')}\\",  # Add aditional include dir
         f"/Yu{pch_use}",                                # Use Precompiled .h
@@ -78,14 +99,30 @@ def compile(paths:Dict[str,WindowsPath],file:WindowsPath,buildfile:WindowsPath):
         f"/Fo{buildfile}",                              # Object File
     ]
     file_path = f"{file}"
-    _ppch= [f"{paths['compiler']}",*commonCompileOptions,*extraOptions,file_path]
-    print(*_ppch,sep=" ")
-    print()
-    compile_pch = run(_ppch,capture_output=False,cwd=f"{paths['source']}")
-    return compile_pch.returncode
+    compiler_args= [f"{paths['compiler']}",*commonCompileOptions,*extraOptions,file_path]
+    logging.debug(f"Compiler Args: \n{''.join([i+' ' for i in compiler_args])}")
+    # Run compiler
+    compile_file = run(compiler_args,
+        stdout=PIPE,
+        stderr=STDOUT,
+        encoding='UTF-8',
+        errors='ignore',
+        capture_output=False,
+        cwd=f"{paths['source']}"
+    )
+    # Logging
+    if compile_file.returncode == 0:
+        logging.info(f"Compiled Success Code [{compile_file.returncode}]")
+        logging.debug(f"Compiled stdout:\n{compile_file.stdout}")
+    else:
+        logging.error(f"Compiled Error Code [{compile_file.returncode}]")
+        logging.debug(f"Compiled Error:\n{compile_file.stdout}")
+    # End and return error code
+    return compile_file.returncode
 
 def link(paths:Dict[str,WindowsPath]):
-    print("\nLinking to .exe")
+    logging.info("Linking")
+    # Linker Arguments
     link_args =[
         "/ERRORREPORT:PROMPT",
         f"/OUT:{paths['gen_exe']}",
@@ -116,23 +153,48 @@ def link(paths:Dict[str,WindowsPath]):
         f"/IMPLIB:{paths['gen_lib']}",
         "/MACHINE:X64",
     ]
+    # Compiled objs to link
     obj_main = f"{paths['gen_main']}"
     obj_ppch = f"{paths['gen_pch']}"
-    _args= [f"{paths['linker']}",*link_args,obj_main,obj_ppch,f"{paths['gen_util']}"]
-    print(*_args,sep=" ")
-    print()
-    run_linker = run(_args,capture_output=False,cwd=f"{paths['source']}")
-    return run_linker.returncode
+    obj_util = f"{paths['gen_util']}"
+    linker_args= [f"{paths['linker']}",*link_args,obj_main,obj_ppch,obj_util]
+    logging.debug(f"Linker Args: \n{''.join([i+' ' for i in linker_args])}")
+    # Run compiler
+    link_exe = run(linker_args,
+        stdout=PIPE,
+        stderr=STDOUT,
+        encoding='UTF-8',
+        errors='ignore',
+        capture_output=False,
+        cwd=f"{paths['source']}"
+    )
+    # Logging
+    if link_exe.returncode == 0:
+        logging.info(f"Linked Success Code [{link_exe.returncode}]")
+        logging.debug(f"Linked stdout:\n{link_exe.stdout}")
+    else:
+        logging.error(f"Linked Error Code [{link_exe.returncode}]")
+        logging.debug(f"Linked Error:\n{link_exe.stdout}")
+    # End and return error code
+    return link_exe.returncode
 
 #
 # Script Only for Build
 #
 if __name__ == "__main__":
 
-    print("Build Command:",*sys.argv[1:])
+    # Logging Config
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)-8s %(message)s",
+        encoding="utf8",
+    )
+
+    logging.info(msg=f"Build Command {'None' if sys.argv.__len__()==1 else ''.join(sys.argv[1:])}")
 
     # Only work in windows
     if  sys.platform != "win32":
+        logging.error("Script only for windows!")
         exit(1)
 
     # Project Directories
@@ -142,6 +204,7 @@ if __name__ == "__main__":
     # Compiler and Linker
     vc_path = os.getenv("VCToolsInstallDir")
     if vc_path is None:
+        logging.error("Environment Variable 'VCToolsInstallDir' not found!")
         exit(1)
 
     project_paths = {
@@ -166,14 +229,15 @@ if __name__ == "__main__":
 
 
     # Check Existence of all paths
+    logging.debug(f"Project paths: {''.join([i.__str__()+';' for i in project_paths.values()])}")
     check_res = check_paths(project_paths)
     if check_res == False:
+        logging.error("One or more paths not exist!")
         exit(1)
-    print("",*project_paths.values(),sep="\n\t")
 
     # Hash
-    with open(project_paths["main.cpp"],mode="r",encoding="utf8") as fp:
-        print(hashlib.sha1(fp.read().encode(encoding="utf8")).hexdigest())
+    #with open(project_paths["main.cpp"],mode="r",encoding="utf8") as fp:
+    #    print(hashlib.sha1(fp.read().encode(encoding="utf8")).hexdigest())
 
     # Script options:
     if sys.argv.__len__() > 1:
@@ -190,9 +254,6 @@ if __name__ == "__main__":
         if  re.match(r"^compile$",sys.argv[1],flags=re.IGNORECASE) is not None:
             _c1 = compile(project_paths,project_paths["main.cpp"],project_paths["gen_main"])
             _c2 = compile(project_paths,project_paths["util.cpp"],project_paths["gen_util"])
-            #if _c1 == 0 and sys.argv.__len__() == 3:
-            #    if  re.match(r"^link$",sys.argv[2],flags=re.IGNORECASE) is not None:
-            #        link(project_paths)
         # Link only
         if  re.match(r"^link$",sys.argv[1],flags=re.IGNORECASE) is not None:
             link(project_paths)
