@@ -113,10 +113,10 @@ def compile(paths:Dict[str,WindowsPath],file:WindowsPath,buildfile:WindowsPath):
     # Logging
     if compile_file.returncode == 0:
         logging.info(f"Compiled Success Code [{compile_file.returncode}]")
-        logging.debug(f"Compiled stdout:\n{compile_file.stdout}")
+        logging.info(f"Compiled stdout:\n{compile_file.stdout}")
     else:
         logging.error(f"Compiled Error Code [{compile_file.returncode}]")
-        logging.debug(f"Compiled Error:\n{compile_file.stdout}")
+        logging.error(f"Compiled Error:\n{compile_file.stdout}")
     # End and return error code
     return compile_file.returncode
 
