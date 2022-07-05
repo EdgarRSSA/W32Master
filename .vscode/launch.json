@@ -1,17 +1,27 @@
 {
     "configurations": [
         {
-            "name": "C/C++: cl.exe Compilar y depurar el archivo activo",
+            "name": "run",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${fileDirname}\\build\\${fileBasenameNoExtension}.exe",
+            "program": "${workspaceFolder}\\build\\app.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
-            "console": "externalTerminal",
-            "preLaunchTask": "C/C++: cl.exe compilar archivo activo"
-        }
+        },
+        {
+            "name": "compile and link",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\build\\app.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "preLaunchTask": "link"
+        },
+
     ],
     "version": "2.0.0"
 }

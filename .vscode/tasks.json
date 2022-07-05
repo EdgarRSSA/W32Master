@@ -1,24 +1,54 @@
 {
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "C/C++: cl.exe compilar archivo activo",
-            "command": "cl.exe",
-            "args": [
-                "/Zi",
-                "/EHsc",
-                "/Fe${fileDirname}\\build\\${fileBasenameNoExtension}.exe",
-                "${file}"
-            ],
-            "options": {
-                "cwd": "${fileDirname}"
-            },
-            "problemMatcher": [
-                "$msCompile"
-            ],
+            "label":"clear",
+            "type": "shell",
+            "detail": "Clear all generated build files",
             "group": "build",
-            "detail": "Tarea generada por el depurador."
-        }
+            "command":[
+                "python.exe",
+                "${workspaceFolder}\\scripts\\project.build.py",
+                "clear"
+            ],
+            "promptOnClose": false
+        },
+        {
+            "label":"precompile",
+            "type": "shell",
+            "detail": "Precompile PCH File",
+            "group": "build",
+            "command":[
+                "python.exe",
+                "${workspaceFolder}\\scripts\\project.build.py",
+                "precompile"
+            ],
+            "promptOnClose": false
+        },
+        {
+            "label":"compile",
+            "type": "shell",
+            "detail": "Compile main.cpp and utils.cpp",
+            "group": "build",
+            "command":[
+                "python.exe",
+                "${workspaceFolder}\\scripts\\project.build.py",
+                "compile"
+            ],
+            "promptOnClose": false
+        },
+        {
+            "label":"link",
+            "type": "shell",
+            "detail": "Link all object files in app.exe",
+            "group": "build",
+            "command":[
+                "python.exe",
+                "${workspaceFolder}\\scripts\\project.build.py",
+                "link"
+            ],
+            "dependsOn":"compile",
+            "promptOnClose": false
+        },
     ],
     "version": "2.0.0"
 }
