@@ -1,5 +1,19 @@
-#include "pch.h"
+/**
+ * @file main.cpp
+ * @author Edgar Rosales
+ * @brief Console Main.
+ * @version 0.1
+ * @date 2022-07-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
+// PRECOMPILED
 #include "utils.h"
+#include "pch.h"
+// NOT PRECOMPILED
+
 
 /**
  * @brief Entry Main.
@@ -16,7 +30,7 @@ int main()
     auto res = CheckChang(chang);
 
     typedef DWORD PID;
-    PID _count = GetCurrentProcessId();
-    std::cout << "PID: " << _count << std::endl;
+    PID processid = GetCurrentProcessId();
+    std::cout << "PID: " << processid << std::endl;
     return ERROR_SUCCESS;
 }

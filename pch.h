@@ -1,4 +1,15 @@
-// PRECOMPILED HEADERS
+/**
+ * @file pch.h
+ * @author Edgar Rosales
+ * @brief
+ * @version 0.1
+ * @date 2022-07-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ * All Here is 'precompiled' for increase build performance.
+ *
+ */
 #pragma once
 
 #include <sdkddkver.h>

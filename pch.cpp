@@ -1,4 +1,16 @@
+/**
+ * @file pch.cpp
+ * @author Edgar Rosales
+ * @brief Base of precompiled headers.
+ * @version 0.1
+ * @date 2022-07-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ * Used for create precompiled headers.
+ *
+ */
 #pragma once
 
-// & cl.exe /W4 /EHsc /Ycpch.h /FoC:\Users\Edgar\Desktop\W32Master\build\ /FpC:\Users\Edgar\Desktop\W32Master\build\pch.pch  /c /errorReport:prompt  C:\Users\Edgar\Desktop\W32Master\pch.cpp
+#include "utils.h"
 #include "pch.h"

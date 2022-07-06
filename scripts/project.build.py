@@ -1,3 +1,12 @@
+# @file project.build.py
+#
+# @author Edgar Rosales
+# @brief Script for build C++ MSVC code
+# @version 0.1
+# @date 2022-07-05#
+#
+# @copyright Copyright (c) 2022
+
 from asyncio.subprocess import STDOUT,PIPE
 from typing import Dict, List
 from pathlib import WindowsPath
@@ -134,6 +143,13 @@ class ProjectBuild:
         logging.info(f"Files Removed: {files_removed}")
 
 
+def command(argument:str, cmd:str):
+    regex = re.compile(f"^{cmd}$",re.IGNORECASE)
+    if  regex.match(argument) is not None:
+        return True
+    return False
+
+
 #
 # Script Only for Build
 #
@@ -143,7 +159,7 @@ if __name__ == "__main__":
     ProjectBuild.loggingConfig()
 
     # Command to execute
-    logging.info(msg=f"Build Command {'None' if sys.argv.__len__()==1 else ''.join(sys.argv[1:])}")
+    logging.info(f"Build Command {'None' if sys.argv.__len__()==1 else ''.join(sys.argv[1:])}")
 
     # Project Tool Setup
     project = ProjectBuild(
@@ -200,24 +216,28 @@ if __name__ == "__main__":
     # Script options:
     if sys.argv.__len__() > 1:
 
-        # Clean all
-        if  re.match(r"^clear$",sys.argv[1],flags=re.IGNORECASE) is not None:
+        # Clear all
+        if  command(sys.argv[1],"clear"):
             project.clearBuildDirectory()
 
         # Precompile files
-        if  re.match(r"^precompile$",sys.argv[1],flags=re.IGNORECASE) is not None:
-            logging.info("Precompiling: pch ")
+        if  command(sys.argv[1],"precompile"):
+            logging.info("Precompiling: pch , utils ")
             project.compile([
                 *commonCompileOptions,
                 f"/Yc{project_paths['pch.h'].name}",   # Create Precompiled
                 f"/Fp{project_paths['gen_pre_pch']}",  # Precompiled File
                 f"/Fd{project_paths['gen_pdb']}",      # Database File
-                f"/Fo{project_paths['gen_pch']}",      # Object File
-                f"{project_paths['pch.cpp']}"          # pch.cpp
+                f"/Fo{project.build}\\",               # Object File
+                f"/I{project_paths['utils']}\\",       # Include utils dir
+                f"/I{project.source}\\",               # Include source dir
+                f"{project_paths['pch.cpp']}",         # pch.cpp
+                f"{project_paths['util.cpp']}",        # util.cpp
+
             ])
 
         # Compile and link
-        if  re.match(r"^compile$",sys.argv[1],flags=re.IGNORECASE) is not None:
+        if  command(sys.argv[1],"compile"):
             logging.info("Compiling: main")
             project.compile([
                 *commonCompileOptions,
@@ -226,21 +246,12 @@ if __name__ == "__main__":
                 f"/Fd{project_paths['gen_pdb']}",     # Database File
                 f"/Fo{project_paths['gen_main']}",    # Object File
                 f"/I{project_paths['utils']}\\",      # Add aditional include dir
+                f"/I{project.source}\\",              # Include source dir
                 f"{project_paths['main.cpp']}"        # pch.cpp
-            ])
-            logging.info("Compiling: utils")
-            project.compile([
-                *commonCompileOptions,
-                f"/Yu{project_paths['pch.h'].name}",  # Use Precompiled header
-                f"/Fp{project_paths['gen_pre_pch']}", # Use Precompiled File
-                f"/Fd{project_paths['gen_pdb']}",     # Database File
-                f"/I{project_paths['utils']}\\",      # Add aditional include dir
-                f"/Fo{project_paths['gen_util']}",    # Object File
-                f"{project_paths['util.cpp']}"        # pch.cpp
             ])
 
         # Preprocess
-        if  re.match(r"^preprocess$",sys.argv[1],flags=re.IGNORECASE) is not None:
+        if  command(sys.argv[1],"preprocess"):
             project.compile([
                 *commonCompileOptions[1:],
                 "/P",
@@ -255,15 +266,21 @@ if __name__ == "__main__":
             ])
 
         # Link only
-        if  re.match(r"^link$",sys.argv[1],flags=re.IGNORECASE) is not None:
+        if  command(sys.argv[1],"link"):
             logging.info("Linking: app.exe")
             # Linker Arguments
             link_args =[
-                "/ERRORREPORT:PROMPT",
-                "/nologo",
-                f"/OUT:{project_paths['gen_exe']}",
-                "/INCREMENTAL",
-                f"/ILK:{project_paths['gen_ilk']}",
+                "/ERRORREPORT:PROMPT",                  # Prompt when error
+                "/nologo",                              # No banner
+                "/INCREMENTAL",                         # Incrmental link
+                "/MANIFEST:EMBED",                      # Manifest
+                "/MANIFESTUAC:level='asInvoker' uiAccess='false'",  # Runs at the same permission level as the process that started it
+                "/DEBUG",                               # Debug info
+                "/SUBSYSTEM:CONSOLE",                   # CONSOLE TYPE
+                "/TLBID:1",                             # Linker-created type library
+                "/DYNAMICBASE",                         # Application should be randomly rebased at load time. default.
+                "/NXCOMPAT",                            # Data Execution Prevention
+                "/MACHINE:X64",                         # x64 only
                 #"dwmapi.lib",
                 "kernel32.lib",
                 "user32.lib",
@@ -277,19 +294,12 @@ if __name__ == "__main__":
                 "uuid.lib",
                 "odbc32.lib",
                 "odbccp32.lib",
-                "/MANIFEST",
-                "/MANIFESTUAC:level='asInvoker' uiAccess='false'",
-                "/manifest:embed",
-                "/DEBUG",
-                f"/PDB:{project_paths['gen_pdb']}",
-                "/SUBSYSTEM:CONSOLE",
-                "/TLBID:1",
-                "/DYNAMICBASE",
-                "/NXCOMPAT",
-                f"/IMPLIB:{project_paths['gen_lib']}",
-                "/MACHINE:X64",
-                f"{project_paths['gen_pch']}",
-                f"{project_paths['gen_main']}",
-                f"{project_paths['gen_util']}",
+                f"/ILK:{project_paths['gen_ilk']}",     # Link Incremental file
+                f"/OUT:{project_paths['gen_exe']}",     # EXE
+                f"/PDB:{project_paths['gen_pdb']}",     # PDB
+                f"/IMPLIB:{project_paths['gen_lib']}",  # Generated LIB
+                f"{project_paths['gen_pch']}",          # pch.obj to link
+                f"{project_paths['gen_main']}",         # main.obj to link
+                f"{project_paths['gen_util']}",         # util.obj to link
             ]
             project.link(link_args)
