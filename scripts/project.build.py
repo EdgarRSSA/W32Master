@@ -180,6 +180,7 @@ if __name__ == "__main__":
         "gen_ilk": project.build.joinpath("./app.ilk"),
         "gen_lib": project.build.joinpath("./app.lib"),
         "gen_main": project.build.joinpath("./main.obj"),
+        "gen_main_prep": project.build.joinpath("./main_prep.i"),
         "gen_util": project.build.joinpath("./util.obj"),
         "gen_pch": project.build.joinpath("./pch.obj"),
         "gen_pre_pch": project.build.joinpath("./pch.pch"),
@@ -236,6 +237,21 @@ if __name__ == "__main__":
                 f"/I{project_paths['utils']}\\",      # Add aditional include dir
                 f"/Fo{project_paths['gen_util']}",    # Object File
                 f"{project_paths['util.cpp']}"        # pch.cpp
+            ])
+
+        # Preprocess
+        if  re.match(r"^preprocess$",sys.argv[1],flags=re.IGNORECASE) is not None:
+            project.compile([
+                *commonCompileOptions[1:],
+                "/P",
+                "/C",
+                f"/Yu{project_paths['pch.h'].name}",  # Use Precompiled header
+                f"/Fp{project_paths['gen_pre_pch']}", # Use Precompiled File
+                f"/Fd{project_paths['gen_pdb']}",     # Database File
+                f"/Fo{project_paths['gen_main']}",    # Object File
+                f"/Fi{project_paths['gen_main_prep']}",    # Preprocessed File
+                f"/I{project_paths['utils']}\\",      # Add aditional include dir
+                f"{project_paths['main.cpp']}"        # pch.cpp
             ])
 
         # Link only
