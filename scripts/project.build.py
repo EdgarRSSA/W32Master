@@ -124,6 +124,7 @@ class ProjectBuild:
         else:
             logging.error(f"Link Error Code [{link_exe.returncode}]")
             logging.error(f"Link Error:\n{link_exe.stdout}")
+            exit(1)
         # End and return error code
         return link_exe.returncode
 
