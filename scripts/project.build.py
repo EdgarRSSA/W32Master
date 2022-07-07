@@ -237,7 +237,7 @@ if __name__ == "__main__":
 
             ])
 
-        # Compile and link
+        # Compile
         if  command(sys.argv[1],"compile"):
             logging.info("Compiling: main")
             project.compile([
@@ -270,6 +270,54 @@ if __name__ == "__main__":
         if  command(sys.argv[1],"link"):
             logging.info("Linking: app.exe")
             # Linker Arguments
+            link_args =[
+                "/ERRORREPORT:PROMPT",                  # Prompt when error
+                "/nologo",                              # No banner
+                "/INCREMENTAL",                         # Incrmental link
+                "/MANIFEST:EMBED",                      # Manifest
+                "/MANIFESTUAC:level='asInvoker' uiAccess='false'",  # Runs at the same permission level as the process that started it
+                "/DEBUG",                               # Debug info
+                "/SUBSYSTEM:CONSOLE",                   # CONSOLE TYPE
+                "/TLBID:1",                             # Linker-created type library
+                "/DYNAMICBASE",                         # Application should be randomly rebased at load time. default.
+                "/NXCOMPAT",                            # Data Execution Prevention
+                "/MACHINE:X64",                         # x64 only
+                #"dwmapi.lib",
+                "kernel32.lib",
+                "user32.lib",
+                #"gdi32.lib",
+                "winspool.lib",
+                "comdlg32.lib",
+                "advapi32.lib",
+                "shell32.lib",
+                "ole32.lib",
+                "oleaut32.lib",
+                "uuid.lib",
+                "odbc32.lib",
+                "odbccp32.lib",
+                f"/ILK:{project_paths['gen_ilk']}",     # Link Incremental file
+                f"/OUT:{project_paths['gen_exe']}",     # EXE
+                f"/PDB:{project_paths['gen_pdb']}",     # PDB
+                f"/IMPLIB:{project_paths['gen_lib']}",  # Generated LIB
+                f"{project_paths['gen_pch']}",          # pch.obj to link
+                f"{project_paths['gen_main']}",         # main.obj to link
+                f"{project_paths['gen_util']}",         # util.obj to link
+            ]
+            project.link(link_args)
+
+
+        if  command(sys.argv[1],"fast"):
+            logging.info("Compile and Link")
+            project.compile([
+                *commonCompileOptions,
+                f"/Yu{project_paths['pch.h'].name}",  # Use Precompiled header
+                f"/Fp{project_paths['gen_pre_pch']}", # Use Precompiled File
+                f"/Fd{project_paths['gen_pdb']}",     # Database File
+                f"/Fo{project_paths['gen_main']}",    # Object File
+                f"/I{project_paths['utils']}\\",      # Add aditional include dir
+                f"/I{project.source}\\",              # Include source dir
+                f"{project_paths['main.cpp']}"        # pch.cpp
+            ])
             link_args =[
                 "/ERRORREPORT:PROMPT",                  # Prompt when error
                 "/nologo",                              # No banner
