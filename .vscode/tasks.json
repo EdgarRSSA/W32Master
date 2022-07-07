@@ -49,6 +49,18 @@
             "dependsOn":"compile",
             "promptOnClose": false
         },
+        {
+            "label":"fast",
+            "type": "shell",
+            "detail": "Link all object files in app.exe",
+            "group": "build",
+            "command":[
+                "python.exe",
+                "${workspaceFolder}\\scripts\\project.build.py",
+                "fast"
+            ],
+            "promptOnClose": false
+        },
     ],
     "version": "2.0.0"
 }
